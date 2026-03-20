@@ -8,7 +8,7 @@ import json
 import os.path
 import pkgutil
 import sys
-from typing import Dict, Type, TYPE_CHECKING, List, Optional, cast
+from typing import Any, Dict, Type, TYPE_CHECKING, List, Optional, cast
 
 from PyQt6.QtCore import QObject, QUrl, pyqtProperty, pyqtSignal, pyqtSlot
 
@@ -276,10 +276,10 @@ class PostProcessingPlugin(QObject, Extension):
             Logger.log("w", "exportScripts called with empty file path.")
             return
 
-        scripts_data = []
+        scripts_data = []  # type: List[Dict[str, Any]]
         for script in self._script_list:
             script_key = script.getSettingData()["key"]
-            settings = {}
+            settings = {}  # type: Dict[str, str]
             for setting_key in script.getSettingData()["settings"]:
                 settings[setting_key] = str(script.getSettingValueByKey(setting_key))
             scripts_data.append({"key": script_key, "settings": settings})
@@ -293,9 +293,11 @@ class PostProcessingPlugin(QObject, Extension):
         try:
             with open(file_path, "w", encoding = "utf-8") as f:
                 json.dump(export_dict, f, indent = 2)
-            Logger.log("d", "Exported %d post-processing script(s) to %s", len(scripts_data), file_path)
+            Logger.log("d", "Exported {count} post-processing script(s) to {path}".format(
+                count = len(scripts_data), path = file_path))
         except OSError as e:
-            Logger.logException("e", "Failed to export post-processing scripts to %s: %s", file_path, str(e))
+            Logger.logException("e", "Failed to export post-processing scripts to {path}: {err}".format(
+                path = file_path, err = str(e)))
 
     @pyqtSlot(QUrl)
     def importScripts(self, file_url: QUrl) -> None:
@@ -312,20 +314,23 @@ class PostProcessingPlugin(QObject, Extension):
             with open(file_path, "r", encoding = "utf-8") as f:
                 import_dict = json.load(f)
         except (OSError, json.JSONDecodeError) as e:
-            Logger.logException("e", "Failed to read post-processing scripts from %s: %s", file_path, str(e))
+            Logger.logException("e", "Failed to read post-processing scripts from {path}: {err}".format(
+                path = file_path, err = str(e)))
             return
 
         if import_dict.get("type") != "postprocessing-script-config":
-            Logger.log("e", "File %s is not a valid post-processing script configuration (wrong type).", file_path)
+            Logger.log("e", "File {path} is not a valid post-processing script configuration (wrong type).".format(
+                path = file_path))
             return
 
         scripts_data = import_dict.get("scripts", [])
         self.loadAllScripts()
-        new_scripts = []
+        new_scripts = []  # type: List[Script]
         for entry in scripts_data:
             script_key = entry.get("key")
             if script_key not in self._loaded_scripts:
-                Logger.log("e", "Unknown post-processing script '%s' encountered during import; skipping.", script_key)
+                Logger.log("e", "Unknown post-processing script '{key}' encountered during import; skipping.".format(
+                    key = script_key))
                 continue
             new_script = self._loaded_scripts[script_key]()
             new_script.initialize()
@@ -335,7 +340,7 @@ class PostProcessingPlugin(QObject, Extension):
             new_scripts.append(new_script)
 
         if not new_scripts:
-            Logger.log("w", "No valid scripts found in %s.", file_path)
+            Logger.log("w", "No valid scripts found in {path}.".format(path = file_path))
             return
 
         self._script_list.clear()
@@ -343,7 +348,8 @@ class PostProcessingPlugin(QObject, Extension):
         self.setSelectedScriptIndex(0)
         self.scriptListChanged.emit()
         self._propertyChanged()
-        Logger.log("d", "Imported %d post-processing script(s) from %s", len(new_scripts), file_path)
+        Logger.log("d", "Imported {count} post-processing script(s) from {path}".format(
+            count = len(new_scripts), path = file_path))
 
     def _restoreScriptInforFromMetadata(self):
         self.loadAllScripts()
