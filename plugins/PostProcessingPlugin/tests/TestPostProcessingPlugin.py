@@ -95,7 +95,6 @@ def test_export_scripts_writes_valid_json():
     """exportScripts should write a valid JSON file with the correct structure."""
     plugin = _make_plugin_instance()
 
-    # Build a fake script
     mock_script = MagicMock()
     mock_script.getSettingData = MagicMock(return_value={"key": "PauseAtHeight", "settings": {"pause_at": "10"}})
     mock_script.getSettingValueByKey = MagicMock(return_value="10")
@@ -194,7 +193,6 @@ def test_import_scripts_wrong_type_ignored():
         mock_url = MagicMock()
         mock_url.toLocalFile = MagicMock(return_value=tmp_path)
         plugin.importScripts(mock_url)
-        # Script list must not change
         assert plugin._script_list == []
     finally:
         os.unlink(tmp_path)
@@ -203,7 +201,7 @@ def test_import_scripts_wrong_type_ignored():
 def test_import_scripts_unknown_key_skipped():
     """importScripts should skip entries whose script key is not in _loaded_scripts."""
     plugin = _make_plugin_instance()
-    plugin._loaded_scripts = {}  # No loaded scripts
+    plugin._loaded_scripts = {}
 
     export_data = {
         "version": 1,
