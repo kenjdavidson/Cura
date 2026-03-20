@@ -59,20 +59,16 @@ def test_enterprise_bundled_script_allowed():
 
 
 def _create_plugin_with_scripts(scripts: List[Any]) -> MagicMock:
-    """Helper to create a PostProcessingPlugin with a pre-populated _script_list and _loaded_scripts."""
     plugin = MagicMock(spec=PostProcessingPlugin)
     plugin._script_list = scripts
     plugin._loaded_scripts = {}
     plugin._selected_script_index = len(scripts) - 1 if scripts else -1
     plugin.setSelectedScriptIndex = lambda index: setattr(plugin, "_selected_script_index", index)
-
-    # Wire duplicateScriptByIndex to the real implementation
     plugin.duplicateScriptByIndex = lambda index: PostProcessingPlugin.duplicateScriptByIndex(plugin, index)
     return plugin
 
 
 def _create_mock_script(key: str, settings: Dict[str, Any], values: Dict[str, Any]) -> MagicMock:
-    """Helper to create a mock Script instance with given settings and values."""
     script = MagicMock()
     script.getSettingData = MagicMock(return_value={"key": key, "settings": settings})
     script.getSettingValueByKey = MagicMock(side_effect=lambda k: values.get(k))
@@ -81,7 +77,6 @@ def _create_mock_script(key: str, settings: Dict[str, Any], values: Dict[str, An
 
 
 def test_duplicate_script_appends_copy() -> None:
-    """Duplicating a script should append a new script with the same settings to the end of the list."""
     original_script = _create_mock_script("PauseAtHeight", {"pause_height": None}, {"pause_height": 10})
 
     new_script = MagicMock()
@@ -100,7 +95,6 @@ def test_duplicate_script_appends_copy() -> None:
 
 
 def test_duplicate_script_invalid_index_below_range() -> None:
-    """Duplicating with a negative index should not change the script list."""
     original_script = _create_mock_script("PauseAtHeight", {}, {})
     plugin = _create_plugin_with_scripts([original_script])
 
@@ -110,7 +104,6 @@ def test_duplicate_script_invalid_index_below_range() -> None:
 
 
 def test_duplicate_script_invalid_index_above_range() -> None:
-    """Duplicating with an out-of-bounds index should not change the script list."""
     original_script = _create_mock_script("PauseAtHeight", {}, {})
     plugin = _create_plugin_with_scripts([original_script])
 
@@ -120,7 +113,6 @@ def test_duplicate_script_invalid_index_above_range() -> None:
 
 
 def test_duplicate_script_empty_list() -> None:
-    """Duplicating from an empty script list should not modify the list."""
     plugin = _create_plugin_with_scripts([])
 
     plugin.duplicateScriptByIndex(0)
@@ -129,7 +121,6 @@ def test_duplicate_script_empty_list() -> None:
 
 
 def test_duplicate_script_copies_all_settings() -> None:
-    """Duplicating a script should copy all settings to the new script."""
     settings = {"layer": None, "speed": None, "temp": None}
     values = {"layer": 5, "speed": 50, "temp": 210}
     original_script = _create_mock_script("PauseAtHeight", settings, values)

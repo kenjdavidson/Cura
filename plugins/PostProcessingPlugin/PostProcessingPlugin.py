@@ -258,8 +258,6 @@ class PostProcessingPlugin(QObject, Extension):
 
     @pyqtSlot(int)
     def duplicateScriptByIndex(self, index: int) -> None:
-        """Duplicate a script from the active script list by index and append the copy to the end of the list."""
-
         if index < 0 or index >= len(self._script_list):
             return
 
