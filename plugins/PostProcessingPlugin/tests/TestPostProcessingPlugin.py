@@ -3,6 +3,7 @@
 
 import os
 import sys
+from typing import Any, Dict, List
 from unittest.mock import patch, MagicMock
 
 from UM.PluginRegistry import PluginRegistry
@@ -57,7 +58,7 @@ def test_enterprise_bundled_script_allowed():
     assert PostProcessingPlugin._isScriptAllowed(_bundled_file_path())
 
 
-def _create_plugin_with_scripts(scripts):
+def _create_plugin_with_scripts(scripts: List[Any]) -> MagicMock:
     """Helper to create a PostProcessingPlugin with a pre-populated _script_list and _loaded_scripts."""
     plugin = MagicMock(spec=PostProcessingPlugin)
     plugin._script_list = scripts
@@ -70,7 +71,7 @@ def _create_plugin_with_scripts(scripts):
     return plugin
 
 
-def _create_mock_script(key, settings, values):
+def _create_mock_script(key: str, settings: Dict[str, Any], values: Dict[str, Any]) -> MagicMock:
     """Helper to create a mock Script instance with given settings and values."""
     script = MagicMock()
     script.getSettingData = MagicMock(return_value={"key": key, "settings": settings})
@@ -79,7 +80,7 @@ def _create_mock_script(key, settings, values):
     return script
 
 
-def test_duplicate_script_appends_copy():
+def test_duplicate_script_appends_copy() -> None:
     """Duplicating a script should append a new script with the same settings to the end of the list."""
     original_script = _create_mock_script("PauseAtHeight", {"pause_height": None}, {"pause_height": 10})
 
@@ -98,7 +99,7 @@ def test_duplicate_script_appends_copy():
     assert plugin._selected_script_index == 1
 
 
-def test_duplicate_script_invalid_index_below_range():
+def test_duplicate_script_invalid_index_below_range() -> None:
     """Duplicating with a negative index should not change the script list."""
     original_script = _create_mock_script("PauseAtHeight", {}, {})
     plugin = _create_plugin_with_scripts([original_script])
@@ -108,7 +109,7 @@ def test_duplicate_script_invalid_index_below_range():
     assert len(plugin._script_list) == 1
 
 
-def test_duplicate_script_invalid_index_above_range():
+def test_duplicate_script_invalid_index_above_range() -> None:
     """Duplicating with an out-of-bounds index should not change the script list."""
     original_script = _create_mock_script("PauseAtHeight", {}, {})
     plugin = _create_plugin_with_scripts([original_script])
@@ -118,7 +119,7 @@ def test_duplicate_script_invalid_index_above_range():
     assert len(plugin._script_list) == 1
 
 
-def test_duplicate_script_empty_list():
+def test_duplicate_script_empty_list() -> None:
     """Duplicating from an empty script list should not modify the list."""
     plugin = _create_plugin_with_scripts([])
 
@@ -127,7 +128,7 @@ def test_duplicate_script_empty_list():
     assert len(plugin._script_list) == 0
 
 
-def test_duplicate_script_copies_all_settings():
+def test_duplicate_script_copies_all_settings() -> None:
     """Duplicating a script should copy all settings to the new script."""
     settings = {"layer": None, "speed": None, "temp": None}
     values = {"layer": 5, "speed": 50, "temp": 210}
