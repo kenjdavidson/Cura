@@ -4,12 +4,13 @@
 import configparser  # The script lists are stored in metadata as serialised config files.
 import importlib.util
 import io  # To allow configparser to write to a string.
+import json
 import os.path
 import pkgutil
 import sys
 from typing import Dict, Type, TYPE_CHECKING, List, Optional, cast
 
-from PyQt6.QtCore import QObject, pyqtProperty, pyqtSignal, pyqtSlot
+from PyQt6.QtCore import QObject, QUrl, pyqtProperty, pyqtSignal, pyqtSlot
 
 from UM.Application import Application
 from UM.Extension import Extension
@@ -255,6 +256,94 @@ class PostProcessingPlugin(QObject, Extension):
         self.setSelectedScriptIndex(len(self._script_list) - 1)
         self.scriptListChanged.emit()
         self._propertyChanged()
+
+    @pyqtSlot()
+    def clearScripts(self) -> None:
+        """Remove all scripts from the active script list."""
+        self._script_list.clear()
+        self.setSelectedScriptIndex(-1)
+        self.scriptListChanged.emit()
+        self._propertyChanged()
+
+    @pyqtSlot(QUrl)
+    def exportScripts(self, file_url: QUrl) -> None:
+        """Export the current script list to a JSON file.
+
+        :param file_url: The URL of the file to export to.
+        """
+        file_path = file_url.toLocalFile()
+        if not file_path:
+            Logger.log("w", "exportScripts called with empty file path.")
+            return
+
+        scripts_data = []
+        for script in self._script_list:
+            script_key = script.getSettingData()["key"]
+            settings = {}
+            for setting_key in script.getSettingData()["settings"]:
+                settings[setting_key] = str(script.getSettingValueByKey(setting_key))
+            scripts_data.append({"key": script_key, "settings": settings})
+
+        export_dict = {
+            "version": 1,
+            "type": "postprocessing-script-config",
+            "scripts": scripts_data,
+        }
+
+        try:
+            with open(file_path, "w", encoding = "utf-8") as f:
+                json.dump(export_dict, f, indent = 2)
+            Logger.log("d", "Exported %d post-processing script(s) to %s", len(scripts_data), file_path)
+        except OSError as e:
+            Logger.logException("e", "Failed to export post-processing scripts to %s: %s", file_path, str(e))
+
+    @pyqtSlot(QUrl)
+    def importScripts(self, file_url: QUrl) -> None:
+        """Import a script list from a previously exported JSON file.
+
+        :param file_url: The URL of the file to import from.
+        """
+        file_path = file_url.toLocalFile()
+        if not file_path:
+            Logger.log("w", "importScripts called with empty file path.")
+            return
+
+        try:
+            with open(file_path, "r", encoding = "utf-8") as f:
+                import_dict = json.load(f)
+        except (OSError, json.JSONDecodeError) as e:
+            Logger.logException("e", "Failed to read post-processing scripts from %s: %s", file_path, str(e))
+            return
+
+        if import_dict.get("type") != "postprocessing-script-config":
+            Logger.log("e", "File %s is not a valid post-processing script configuration (wrong type).", file_path)
+            return
+
+        scripts_data = import_dict.get("scripts", [])
+        self.loadAllScripts()
+        new_scripts = []
+        for entry in scripts_data:
+            script_key = entry.get("key")
+            if script_key not in self._loaded_scripts:
+                Logger.log("e", "Unknown post-processing script '%s' encountered during import; skipping.", script_key)
+                continue
+            new_script = self._loaded_scripts[script_key]()
+            new_script.initialize()
+            for setting_key, setting_value in entry.get("settings", {}).items():
+                if new_script._instance is not None:
+                    new_script._instance.setProperty(setting_key, "value", setting_value)
+            new_scripts.append(new_script)
+
+        if not new_scripts:
+            Logger.log("w", "No valid scripts found in %s.", file_path)
+            return
+
+        self._script_list.clear()
+        self._script_list.extend(new_scripts)
+        self.setSelectedScriptIndex(0)
+        self.scriptListChanged.emit()
+        self._propertyChanged()
+        Logger.log("d", "Imported %d post-processing script(s) from %s", len(new_scripts), file_path)
 
     def _restoreScriptInforFromMetadata(self):
         self.loadAllScripts()
