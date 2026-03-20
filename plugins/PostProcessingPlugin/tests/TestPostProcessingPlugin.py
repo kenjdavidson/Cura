@@ -6,8 +6,8 @@ import os
 import sys
 import tempfile
 
-from unittest.mock import MagicMock, patch
 from typing import Any, Dict, List
+from unittest.mock import patch, MagicMock
 
 from UM.PluginRegistry import PluginRegistry
 from UM.Resources import Resources
