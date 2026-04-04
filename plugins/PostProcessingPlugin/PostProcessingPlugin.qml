@@ -88,14 +88,29 @@ UM.Dialog
 
             spacing: base.textMargin
 
-            UM.Label
+            RowLayout
             {
-                id: activeScriptsHeader
-                text: catalog.i18nc("@label", "Post Processing Scripts")
+                id: activeScriptsHeaderRow
                 anchors.left: parent.left
                 anchors.right: parent.right
-                font: UM.Theme.getFont("large_bold")
-                elide: Text.ElideRight
+                spacing: UM.Theme.getSize("narrow_margin").width
+
+                Cura.SecondaryButton
+                {
+                    id: scriptOptionsButton
+                    Layout.preferredWidth: height
+                    iconSource: UM.Theme.getIcon("Hamburger")
+                    tooltip: catalog.i18nc("@info:tooltip", "Import, export or clear scripts")
+                    onClicked: scriptOptionsMenu.open()
+                }
+
+                UM.Label
+                {
+                    Layout.fillWidth: true
+                    text: catalog.i18nc("@label", "Post Processing Scripts")
+                    font: UM.Theme.getFont("large_bold")
+                    elide: Text.ElideRight
+                }
             }
             ListView
             {
@@ -106,7 +121,7 @@ UM.Dialog
                     right: parent.right
                     rightMargin: base.textMargin
                 }
-                height: Math.min(contentHeight, parent.height - parent.spacing * 2 - activeScriptsHeader.height - addButton.height) //At the window height, start scrolling this one.
+                height: Math.min(contentHeight, parent.height - parent.spacing * 2 - activeScriptsHeaderRow.height - addButton.height) //At the window height, start scrolling this one.
 
                 clip: true
                 ScrollBar.vertical: UM.ScrollBar
@@ -271,28 +286,13 @@ UM.Dialog
                     }
                 }
             }
-            RowLayout
+            Cura.SecondaryButton
             {
+                id: addButton
                 anchors.left: parent.left
                 anchors.right: parent.right
-                spacing: UM.Theme.getSize("narrow_margin").width
-
-                Cura.SecondaryButton
-                {
-                    id: addButton
-                    Layout.fillWidth: true
-                    text: catalog.i18nc("@action", "Add a script")
-                    onClicked: scriptsMenu.open()
-                }
-
-                Cura.SecondaryButton
-                {
-                    id: scriptOptionsButton
-                    Layout.preferredWidth: height
-                    iconSource: UM.Theme.getIcon("Hamburger")
-                    tooltip: catalog.i18nc("@info:tooltip", "Import, export or clear scripts")
-                    onClicked: scriptOptionsMenu.open()
-                }
+                text: catalog.i18nc("@action", "Add a script")
+                onClicked: scriptsMenu.open()
             }
         }
 
@@ -336,8 +336,17 @@ UM.Dialog
             Cura.MenuItem
             {
                 text: catalog.i18nc("@action:inmenu", "Clear scripts")
-                onTriggered: manager.clearScripts()
+                onTriggered: clearScriptsConfirmationDialog.open()
             }
+        }
+
+        Cura.MessageDialog
+        {
+            id: clearScriptsConfirmationDialog
+            title: catalog.i18nc("@title:window", "Clear Scripts")
+            text: catalog.i18nc("@label", "Are you sure you want to clear all scripts?")
+            standardButtons: Cura.MessageDialog.Yes | Cura.MessageDialog.No
+            onAccepted: manager.clearScripts()
         }
 
         FileDialog
