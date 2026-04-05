@@ -1,0 +1,112 @@
+From 5ae820222d1845b2025373d874a952fae5ff33b2 Mon Sep 17 00:00:00 2001
+From: "copilot-swe-agent[bot]" <198982749+Copilot@users.noreply.github.com>
+Date: Sun, 5 Apr 2026 01:03:12 +0000
+Subject: [PATCH] chore: move hamburger menu to top and add clear confirmation
+ dialog
+
+Agent-Logs-Url: https://github.com/kenjdavidson/Cura/sessions/fe1996b9-2bc7-4519-abb0-e7ebfcb69342
+
+Co-authored-by: kenjdavidson <6210735+kenjdavidson@users.noreply.github.com>
+---
+ .../PostProcessingPlugin.qml                  | 57 +++++++++++--------
+ 1 file changed, 33 insertions(+), 24 deletions(-)
+
+diff --git a/plugins/PostProcessingPlugin/PostProcessingPlugin.qml b/plugins/PostProcessingPlugin/PostProcessingPlugin.qml
+index d10006e..ae57714a 100644
+--- a/plugins/PostProcessingPlugin/PostProcessingPlugin.qml
++++ b/plugins/PostProcessingPlugin/PostProcessingPlugin.qml
+@@ -88,14 +88,29 @@ UM.Dialog
+ 
+             spacing: base.textMargin
+ 
+-            UM.Label
++            RowLayout
+             {
+                 id: activeScriptsHeader
+-                text: catalog.i18nc("@label", "Post Processing Scripts")
+                 anchors.left: parent.left
+                 anchors.right: parent.right
+-                font: UM.Theme.getFont("large_bold")
+-                elide: Text.ElideRight
++                spacing: UM.Theme.getSize("narrow_margin").width
++
++                Cura.SecondaryButton
++                {
++                    id: scriptOptionsButton
++                    Layout.preferredWidth: height
++                    iconSource: UM.Theme.getIcon("Hamburger")
++                    tooltip: catalog.i18nc("@info:tooltip", "Import, export or clear scripts")
++                    onClicked: scriptOptionsMenu.open()
++                }
++
++                UM.Label
++                {
++                    Layout.fillWidth: true
++                    text: catalog.i18nc("@label", "Post Processing Scripts")
++                    font: UM.Theme.getFont("large_bold")
++                    elide: Text.ElideRight
++                }
+             }
+             ListView
+             {
+@@ -271,28 +286,13 @@ UM.Dialog
+                     }
+                 }
+             }
+-            RowLayout
++            Cura.SecondaryButton
+             {
++                id: addButton
+                 anchors.left: parent.left
+                 anchors.right: parent.right
+-                spacing: UM.Theme.getSize("narrow_margin").width
+-
+-                Cura.SecondaryButton
+-                {
+-                    id: addButton
+-                    Layout.fillWidth: true
+-                    text: catalog.i18nc("@action", "Add a script")
+-                    onClicked: scriptsMenu.open()
+-                }
+-
+-                Cura.SecondaryButton
+-                {
+-                    id: scriptOptionsButton
+-                    Layout.preferredWidth: height
+-                    iconSource: UM.Theme.getIcon("Hamburger")
+-                    tooltip: catalog.i18nc("@info:tooltip", "Import, export or clear scripts")
+-                    onClicked: scriptOptionsMenu.open()
+-                }
++                text: catalog.i18nc("@action", "Add a script")
++                onClicked: scriptsMenu.open()
+             }
+         }
+ 
+@@ -336,7 +336,7 @@ UM.Dialog
+             Cura.MenuItem
+             {
+                 text: catalog.i18nc("@action:inmenu", "Clear scripts")
+-                onTriggered: manager.clearScripts()
++                onTriggered: confirmClearScriptsDialog.open()
+             }
+         }
+ 
+@@ -359,6 +359,15 @@ UM.Dialog
+             onAccepted: manager.importScripts(selectedFile)
+         }
+ 
++        Cura.MessageDialog
++        {
++            id: confirmClearScriptsDialog
++            title: catalog.i18nc("@dialog:title", "Clear Post-Processing Scripts")
++            text: catalog.i18nc("@dialog:info", "Are you sure you want to clear all Post-Processing Scripts?")
++            standardButtons: Dialog.Yes | Dialog.No
++            onAccepted: manager.clearScripts()
++        }
++
+         Rectangle
+         {
+             color: UM.Theme.getColor("main_background")
+-- 
+2.53.0
+
